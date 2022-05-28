@@ -21,9 +21,9 @@
             android:value="true" />
 
         <service
-            android:name=".MyWatchFace"
+            android:name=".SimpleDigitalWatchFace"
             android:exported="true"
-            android:label="@string/my_analog_name"
+            android:label="@string/simple_digital_name"
             android:permission="android.permission.BIND_WALLPAPER">
 
             <!--
