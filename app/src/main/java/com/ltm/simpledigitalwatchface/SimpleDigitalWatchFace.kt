@@ -15,6 +15,7 @@ import android.support.wearable.watchface.WatchFaceStyle
 import android.view.SurfaceHolder
 import android.widget.Toast
 import java.lang.ref.WeakReference
+import java.text.SimpleDateFormat
 import java.util.*
 
 /**
@@ -53,12 +54,20 @@ class SimpleDigitalWatchFace: CanvasWatchFaceService() {
         private var mCenterX: Float = 0F
         private var mCenterY: Float = 0F
 
-        private lateinit var mTextPaint: Paint
-        private lateinit var mBackgroundPaint: Paint
+        private var timeOffsetX: Float = 0f
+        private var timeOffsetY: Float = 0f
+        private var dateOffsetX: Float = 0f
+        private var dateOffsetY: Float = 0f
+
+        private lateinit var mTimePaint: Paint
+        private lateinit var mDatePaint: Paint
 
         private var mAmbient: Boolean = false
         private var mLowBitAmbient: Boolean = false
         private var mBurnInProtection: Boolean = false
+
+        private val timeFormatter = SimpleDateFormat("HH:mm", Locale.getDefault())
+        private val dateFormatter = SimpleDateFormat("E, d MMMM YY", Locale.getDefault())
 
         /* Handler to update the time once a second in interactive mode. */
         private val mUpdateTimeHandler = EngineHandler(this)
@@ -105,12 +114,22 @@ class SimpleDigitalWatchFace: CanvasWatchFaceService() {
         }
 
         private fun initializeWatchFace() {
-            mBackgroundPaint = Paint().apply {
-                color = Color.BLACK
+
+            mTimePaint = Paint().apply {
+                color = Color.CYAN
+                textSize = 108f
+                textAlign = Paint.Align.CENTER
+                style = Paint.Style.FILL
+                typeface = Typeface.DEFAULT_BOLD
+                flags = Paint.ANTI_ALIAS_FLAG
             }
 
-            mTextPaint = Paint().apply {
+            mDatePaint = Paint().apply {
                 color = Color.WHITE
+                textSize = 24f
+                textAlign = Paint.Align.CENTER
+                style = Paint.Style.FILL
+                flags = Paint.ANTI_ALIAS_FLAG
             }
         }
 
@@ -128,7 +147,7 @@ class SimpleDigitalWatchFace: CanvasWatchFaceService() {
             mCenterY = height / 2f
         }
 
-        override fun onTapCommand(tapType: Int, x: Int, y: Int, eventTime: Long) {
+        /*override fun onTapCommand(tapType: Int, x: Int, y: Int, eventTime: Long) {
             when (tapType) {
                 WatchFaceService.TAP_TYPE_TOUCH -> {
                     // The user has started touching the screen.
@@ -139,11 +158,10 @@ class SimpleDigitalWatchFace: CanvasWatchFaceService() {
                 WatchFaceService.TAP_TYPE_TAP ->
                     // The user has completed the tap gesture.
                     // TODO: Add code to handle the tap gesture.
-                    Toast.makeText(applicationContext, R.string.message, Toast.LENGTH_SHORT)
-                        .show()
+                    //Toast.makeText(applicationContext, R.string.message, Toast.LENGTH_SHORT).show()
             }
             invalidate()
-        }
+        }*/
 
         override fun onDraw(canvas: Canvas, bounds: Rect?) {
             super.onDraw(canvas, bounds)
@@ -157,10 +175,24 @@ class SimpleDigitalWatchFace: CanvasWatchFaceService() {
             //set background
             canvas.drawColor(Color.BLACK)
 
-            val date = mCalendar.time
+            //format values
+            val formattedTime = timeFormatter.format(mCalendar.time)
+            val formattedDate = dateFormatter.format(mCalendar.time)
 
+            //get bounds
+            val timeBounds = Rect().apply {
+                mTimePaint.getTextBounds(formattedTime, 0, formattedTime.length, this)
+            }
 
-            canvas.drawText(date.toString(), mCenterX/2f, mCenterY, mTextPaint)
+            val dateBounds = Rect().apply {
+                mDatePaint.getTextBounds(formattedDate, 0, formattedDate.length, this)
+            }
+
+            //get offset for
+            timeOffsetX = mCenterX
+            timeOffsetY = mCenterY + (timeBounds.height().toFloat() / 2)
+
+            canvas.drawText(formattedTime, timeOffsetX, timeOffsetY, mTimePaint)
         }
 
         override fun onVisibilityChanged(visible: Boolean) {
