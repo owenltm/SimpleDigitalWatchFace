@@ -1,17 +1,14 @@
 package com.ltm.simpledigitalwatchface
 
-import android.content.BroadcastReceiver
-import android.content.Context
-import android.content.Intent
-import android.content.IntentFilter
+import android.content.*
+import android.content.pm.PackageManager
 import android.graphics.*
-import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
-import android.os.Message
+import android.os.*
+import android.support.wearable.complications.ComplicationData
 import android.support.wearable.watchface.CanvasWatchFaceService
 import android.support.wearable.watchface.WatchFaceService
 import android.support.wearable.watchface.WatchFaceStyle
+import android.util.Log
 import android.view.SurfaceHolder
 import android.widget.Toast
 import java.lang.ref.WeakReference
@@ -49,6 +46,8 @@ class SimpleDigitalWatchFace: CanvasWatchFaceService() {
     inner class Engine : CanvasWatchFaceService.Engine() {
         private lateinit var mCalendar: Calendar
 
+        private var mBatteryLevel = 100
+
         private var mRegisteredTimeZoneReceiver = false
         private var mMuteMode: Boolean = false
         private var mCenterX: Float = 0F
@@ -75,6 +74,14 @@ class SimpleDigitalWatchFace: CanvasWatchFaceService() {
         private val mTimeZoneReceiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context, intent: Intent) {
                 mCalendar.timeZone = TimeZone.getDefault()
+                invalidate()
+            }
+        }
+
+        private val mBatteryReceiver = object  : BroadcastReceiver() {
+            override fun onReceive(context: Context, intent: Intent) {
+                mBatteryLevel = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, 100);
+                Log.d("COMPLICATION", mBatteryLevel.toString())
                 invalidate()
             }
         }
@@ -193,6 +200,8 @@ class SimpleDigitalWatchFace: CanvasWatchFaceService() {
             timeOffsetY = mCenterY + (timeBounds.height().toFloat() / 2)
 
             canvas.drawText(formattedTime, timeOffsetX, timeOffsetY, mTimePaint)
+
+            canvas.drawText(mBatteryLevel.toString().plus("%"), mCenterY, timeOffsetY + dateBounds.height(), mDatePaint)
         }
 
         override fun onVisibilityChanged(visible: Boolean) {
@@ -211,6 +220,16 @@ class SimpleDigitalWatchFace: CanvasWatchFaceService() {
             updateTimer()
         }
 
+        override fun onComplicationDataUpdate(
+            watchFaceComplicationId: Int,
+            data: ComplicationData?
+        ) {
+            if (watchFaceComplicationId == 10) {
+                Log.d("COMPLICATION DATA", data.toString())
+            }
+            super.onComplicationDataUpdate(watchFaceComplicationId, data)
+        }
+
         private fun registerReceiver() {
             if (mRegisteredTimeZoneReceiver) {
                 return
@@ -218,6 +237,7 @@ class SimpleDigitalWatchFace: CanvasWatchFaceService() {
             mRegisteredTimeZoneReceiver = true
             val filter = IntentFilter(Intent.ACTION_TIMEZONE_CHANGED)
             this@SimpleDigitalWatchFace.registerReceiver(mTimeZoneReceiver, filter)
+            this@SimpleDigitalWatchFace.registerReceiver(mBatteryReceiver, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
         }
 
         private fun unregisterReceiver() {
@@ -226,6 +246,7 @@ class SimpleDigitalWatchFace: CanvasWatchFaceService() {
             }
             mRegisteredTimeZoneReceiver = false
             this@SimpleDigitalWatchFace.unregisterReceiver(mTimeZoneReceiver)
+            this@SimpleDigitalWatchFace.unregisterReceiver(mBatteryReceiver)
         }
 
         /**
